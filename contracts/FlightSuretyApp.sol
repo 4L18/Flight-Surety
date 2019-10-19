@@ -25,12 +25,12 @@ contract FlightSuretyApp {
     FlightSuretyData flightSuretyData;
 
     struct Flight {
-        bool isRegistered;
         uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
-    mapping(bytes32 => Flight) private flights;
+    mapping(string => Flight) private flights;
+    uint private flightsCount = 0;
 
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
@@ -40,7 +40,14 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
- 
+
+    /********************************************************************************************/
+    /*                                       EVENT DEFINITIONS                                  */
+    /********************************************************************************************/
+
+    event FlightRegistered(string flightNumber);
+    
+
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -113,38 +120,29 @@ contract FlightSuretyApp {
         }
     }
 
-
-   /**
-    * @dev Register a future flight for insuring.
-    *
-    */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                pure
+    function registerFlight(string flightNumber, address airlineAddr, uint256 timestamp)
+    external
+    requireIsOperational
     {
-
+        flightsCount = flightsCount.add(1);
+        flights[flightNumber] = Flight({
+                statusCode: 0,
+                updatedTimestamp: timestamp,
+                airline: airlineAddr
+            });
+        emit FlightRegistered(flightNumber);
     }
     
-   /**
-    * @dev Called after oracle has updated flight status
-    *
-    */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                pure
+    function processFlightStatus(address airline, string flight, uint256 timestamp, uint8 statusCode)
+    internal
     {
+        require(flightSuretyData.isAuthorized(msg.sender));
+        flights[flight].statusCode = statusCode;
+        flights[flight].updatedTimestamp = timestamp;
+        emit FlightStatusInfo(airline, flight, timestamp, statusCode);
+        
     }
 
-
-    // Generate a request for oracles to fetch flight information
     function fetchFlightStatus
                         (
                             address airline,
@@ -269,8 +267,6 @@ contract FlightSuretyApp {
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
-
-            emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);

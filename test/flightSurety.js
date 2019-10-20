@@ -139,10 +139,61 @@ contract('Flight Surety Tests', async (accounts) => {
     }
   });
 
-  it('Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async () => {
+  it('Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
+    
+        let isRegistered;
+        for(let i = 3; i < 6; i++) {
+            await config.flightSuretyApp.registerAirline(config.testAddresses[i], { from: config.firstAirline });
+            isRegistered = await config.flightSuretyData.isRegistered(config.testAddresses[i]);
+            assert(isRegistered, "Airline has not been registered");
+        }
+
+        try {
+            await config.flightSuretyApp.registerAirline(config.testAddresses[6], { from: testAddresses[3] });
+        } catch (error) {
+            assert(error, error.message);
+        }
+
+        let isAuth;
+        for(let i = 2; i < 6; i++) {
+            await config.flightSuretyApp.fund({ from: config.testAddresses[i], value: 10 });        
+            isAuth = config.flightSuretyData.isAuthorized(config.testAddresses[i]);
+            assert(isAuth, "Submit 10 ether does not authorize airline");
+        }
+        
+        try {
+            await config.flightSuretyApp.registerAirline(config.testAddresses[6], { from: testAddresses[3] });
+        } catch (error) {
+            console.log(error.message);
+        }
+        
   });
 
-  it('Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
+  it('Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async () => {
+    
+    let isRegistered = true;
+
+    try {
+        
+        let airlinesRegistered = await config.flightSuretyData.getAirlinesCount();
+        assert(airlinesRegistered >= 5, "There are less than 5 airlines registered");
+
+        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.firstAirline });
+        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[2] });
+
+        isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[6]);
+        assert.equal(isRegistered, false, "6th airline should not be registered");
+
+        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[3] });
+        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[4] });
+        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[5] });
+        
+        isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[6]);
+        assert.equal(isRegistered, true, "6th airline should be registered");
+
+    } catch (error) {
+        assert(error, error.message);
+    }
   });
 
   // Passengers

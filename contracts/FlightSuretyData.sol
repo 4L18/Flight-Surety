@@ -68,7 +68,7 @@ contract FlightSuretyData {
     external
     payable 
     {
-        fund();
+        fund(msg.sender, msg.value);
     }
 
 
@@ -264,18 +264,19 @@ contract FlightSuretyData {
                             pure
     {
     }
-
-   /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */   
-    function fund
-                            (   
-                            )
-                            public
-                            payable
+   
+    function fund(address funder, uint amount)   
+    requireAuthorizedCaller(msg.sender)
+    payable
     {
+        fundsLedger[funder] = fundsLedger[funder].add(amount);
+        raisedFunds = raisedFunds.add(amount);
+        emit FundsRaised(raisedFunds);
+
+        if(fundsLedger[funder] > 10) {
+            authorizedCallers[funder] = true;
+            emit Authorized(funder);
+        }
     }
 
     function getFlightKey

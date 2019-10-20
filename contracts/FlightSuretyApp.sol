@@ -120,6 +120,14 @@ contract FlightSuretyApp {
         }
     }
 
+    function fundAirline()
+    requireIsOperational
+    payable
+    {
+        require(flightSuretyData.isAirlineRegistered(msg.sender), "Airline not registered");
+        flightSuretyData.fund(msg.sender, msg.value);
+    }
+
     function registerFlight(string flightNumber, address airlineAddr, uint256 timestamp)
     external
     requireIsOperational

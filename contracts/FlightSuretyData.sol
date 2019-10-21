@@ -24,6 +24,7 @@ contract FlightSuretyData {
     mapping(address => Airline) private airlines;
     uint private airlinesCount = 0;
 
+    mapping(bytes32 => bool) private insurances;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -36,7 +37,7 @@ contract FlightSuretyData {
     event AirlineHasBeenVoted(address airline);
     event AirlineHasBeenRegistered(address airline);
     event FundsRaised(uint raisedFunds);
-    
+    event InsuranceHasBeenBought();
     
     /********************************************************************************************/
     /*                                       CONSTRUCTOR & FALLBACK                             */
@@ -186,6 +187,14 @@ contract FlightSuretyData {
         return airlines[airline].votes;
     }
 
+    function insuranceExists(bytes32 key)
+    view
+    requireIsOperational
+    returns(bool)
+    {
+        return insurances[key];
+    }
+
 
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -227,19 +236,42 @@ contract FlightSuretyData {
         airlines[airline].registered = true;
         emit AirlineHasBeenRegistered(airline);
     }
-
-   /**
-    * @dev Buy insurance for a flight
-    *
-    */   
-    function buy
-                            (                             
-                            )
-                            external
-                            payable
+   
+    function fund(address funder, uint amount)   
+    requireAuthorizedCaller(msg.sender)
+    payable
     {
+        fundsLedger[funder] = fundsLedger[funder].add(amount);
+        raisedFunds = raisedFunds.add(amount);
+        emit FundsRaised(raisedFunds);
 
+        if(fundsLedger[funder] > 10) {
+            authorizedCallers[funder] = true;
+            emit Authorized(funder);
+        }
     }
+
+
+    function buyInsurance(address passenger, uint amount, bytes32 key)
+    external
+    requireAuthorizedCaller(msg.sender)
+    payable
+    {
+        fundsLedger[passenger] = fundsLedger[passenger].add(amount);
+        raisedFunds.add(amount);
+        emit FundsRaised(raisedFunds);
+
+        insurances[key] = true;
+        emit InsuranceHasBeenBought();
+    }
+
+    //function refund(bytes32 key) internal returns(uint) {
+        
+        //uint amount = insurances[key];
+        //delete insurances[key];
+
+        //return amount;
+    //}
 
     /**
      *  @dev Credits payouts to insurees
@@ -264,30 +296,11 @@ contract FlightSuretyData {
                             pure
     {
     }
-   
-    function fund(address funder, uint amount)   
-    requireAuthorizedCaller(msg.sender)
-    payable
-    {
-        fundsLedger[funder] = fundsLedger[funder].add(amount);
-        raisedFunds = raisedFunds.add(amount);
-        emit FundsRaised(raisedFunds);
 
-        if(fundsLedger[funder] > 10) {
-            authorizedCallers[funder] = true;
-            emit Authorized(funder);
-        }
-    }
-
-    function getFlightKey
-                        (
-                            address airline,
-                            string memory flight,
-                            uint256 timestamp
-                        )
-                        pure
-                        internal
-                        returns(bytes32) 
+    function getFlightKey(address airline, string memory flight, uint256 timestamp)
+    pure
+    internal
+    returns(bytes32) 
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }

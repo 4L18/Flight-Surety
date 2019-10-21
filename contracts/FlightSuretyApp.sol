@@ -19,17 +19,20 @@ contract FlightSuretyApp {
 
     uint constant QUORUM = 100/50;
     uint constant FIRST_LEVEL_QUORUM = 5;
+    uint constant MAX_INSURANCE = 1 ether;
 
     address private contractOwner;
     bool private operational = true;
     FlightSuretyData flightSuretyData;
 
     struct Flight {
+        string flight;
+        bool isRegistered;
         uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
-    mapping(string => Flight) private flights;
+    mapping(bytes32 => Flight) private flights;
     uint private flightsCount = 0;
 
     // Flight status codees
@@ -128,36 +131,36 @@ contract FlightSuretyApp {
         flightSuretyData.fund(msg.sender, msg.value);
     }
 
-    function registerFlight(string flightNumber, address airlineAddr, uint256 timestamp)
+    function registerFlight(string flight, address airlineAddr, uint256 timestamp)
     external
     requireIsOperational
     {
+        bytes32 flightKey = keccak256(abi.encodePacked(flight, timestamp));
         flightsCount = flightsCount.add(1);
-        flights[flightNumber] = Flight({
+        flights[flightKey] = Flight({
+                flight: flight,
+                isRegistered: true,
                 statusCode: 0,
                 updatedTimestamp: timestamp,
                 airline: airlineAddr
             });
-        emit FlightRegistered(flightNumber);
+        emit FlightRegistered(flight);
     }
     
     function processFlightStatus(address airline, string flight, uint256 timestamp, uint8 statusCode)
     internal
+    requireIsOperational
     {
         require(flightSuretyData.isAuthorized(msg.sender));
-        flights[flight].statusCode = statusCode;
-        flights[flight].updatedTimestamp = timestamp;
+        bytes32 fligthKey = generateFlightKey(flight, timestamp);
+        flights[fligthKey].statusCode = statusCode;
+        flights[fligthKey].updatedTimestamp = timestamp;
         emit FlightStatusInfo(airline, flight, timestamp, statusCode);
         
     }
 
-    function fetchFlightStatus
-                        (
-                            address airline,
-                            string flight,
-                            uint256 timestamp                            
-                        )
-                        external
+    function fetchFlightStatus(address airline, string flight, uint256 timestamp)
+    requireIsOperational
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -170,6 +173,37 @@ contract FlightSuretyApp {
 
         emit OracleRequest(index, airline, flight, timestamp);
     } 
+
+    function buyInsurance(string flight, uint256 timestamp)
+    external
+    requireIsOperational
+    payable
+    {
+        require(msg.value <= MAX_INSURANCE, "Up to 1 ether for purchasing flight insurance");
+        
+        bytes32 flightKey = generateFlightKey(flight, timestamp);
+        require(!flights[flightKey].isRegistered, "This code does not match any flight");
+        
+        bytes32 insuranceKey = generateInsuranceKey(msg.sender, flight, timestamp);
+        require(!flightSuretyData.insuranceExists(insuranceKey), "Already bought this insurance");
+
+        flightSuretyData.buyInsurance(msg.sender, msg.value, insuranceKey);
+    }
+
+    function generateFlightKey(string flight, uint256 timestamp)
+    requireIsOperational
+    returns(bytes32)    
+    {
+        return keccak256(abi.encodePacked(flight, timestamp));
+    }
+
+    function generateInsuranceKey(address passenger, string flight, uint256 timestamp)
+    requireIsOperational
+    returns(bytes32)    
+    {
+        return keccak256(abi.encodePacked(passenger, flight, timestamp));
+    }
+
 
 
 // region ORACLE MANAGEMENT

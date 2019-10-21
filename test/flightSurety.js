@@ -189,7 +189,7 @@ contract('Flight Surety Tests', async (accounts) => {
         await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[5] });
         
         isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[6]);
-        assert.equal(isRegistered, true, "6th airline should be registered");
+        assert(isRegistered, "6th airline should be registered");
 
     } catch (error) {
         assert(error, error.message);
@@ -198,6 +198,21 @@ contract('Flight Surety Tests', async (accounts) => {
 
   // Passengers
   it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
+      
+    try {
+
+        await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: accounts[3] });
+        
+        let isFunded = await config.flightSuretyData.isFunded(accounts[3]);
+        assert(isFunded, "No funds added after purchase")
+
+        let key = config.flightSuretyApp.generateInsuranceKey(accounts[3], config.flight, config.timestamp);
+        let exists = await config.flightSuretyData.insuranceExists(key);
+        assert(exists, "Passenger could not purchaise flight insurance");
+
+    }  catch (error) {
+        console.log(error);
+    }
   });
 
   it('If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {

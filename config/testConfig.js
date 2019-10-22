@@ -25,6 +25,7 @@ var Config = async function(accounts) {
     let firstAirline = accounts[1];
     let flight = 'ND1309'; // Course number
     let timestamp = Math.floor(Date.now() / 1000);
+    let status = 0;
     let flightSuretyData = await FlightSuretyData.new(firstAirline);
     let flightSuretyApp = await FlightSuretyApp.new();
 
@@ -34,6 +35,7 @@ var Config = async function(accounts) {
         firstAirline: firstAirline,
         flight: flight,
         timestamp: timestamp,
+        status: status,
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,

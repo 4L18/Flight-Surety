@@ -38,6 +38,7 @@ contract FlightSuretyData {
     event AirlineHasBeenRegistered(address airline);
     event FundsRaised(uint raisedFunds);
     event InsuranceHasBeenBought();
+    event Payment();
     
     /********************************************************************************************/
     /*                                       CONSTRUCTOR & FALLBACK                             */
@@ -171,6 +172,15 @@ contract FlightSuretyData {
         return fundsLedger[addr] > 0;
     }
 
+    function getFunds(address addr)
+    public
+    view
+    requireIsOperational
+    returns(uint)
+    {
+        return fundsLedger[addr];
+    }
+
     function getAirlinesCount()
     view
     requireIsOperational
@@ -265,36 +275,20 @@ contract FlightSuretyData {
         emit InsuranceHasBeenBought();
     }
 
-    //function refund(bytes32 key) internal returns(uint) {
-        
-        //uint amount = insurances[key];
-        //delete insurances[key];
-
-        //return amount;
-    //}
-
-    /**
-     *  @dev Credits payouts to insurees
-    */
-    function creditInsurees
-                                (
-                                )
-                                external
-                                pure
+    function creditInsurees(address passenger, uint credit, bytes32 key)
+    external
     {
+        fundsLedger[passenger] = 0;
+        raisedFunds.sub(credit);
+        insurances[key] = false;
+        pay(passenger, credit);
     }
     
-
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-    */
-    function pay
-                            (
-                            )
-                            external
-                            pure
+    function pay(address passenger, uint credit)
+    internal
     {
+        passenger.transfer(credit);
+        emit Payment();
     }
 
     function getFlightKey(address airline, string memory flight, uint256 timestamp)

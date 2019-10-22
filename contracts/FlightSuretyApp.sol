@@ -49,6 +49,8 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     event FlightRegistered(string flightNumber);
+    event InsurancePurchased(bytes32 key);
+    event CompensationtWithdrawn(bytes32 key);
     
 
     /********************************************************************************************/
@@ -182,12 +184,31 @@ contract FlightSuretyApp {
         require(msg.value <= MAX_INSURANCE, "Up to 1 ether for purchasing flight insurance");
         
         bytes32 flightKey = generateFlightKey(flight, timestamp);
-        require(!flights[flightKey].isRegistered, "This code does not match any flight");
+        require(flights[flightKey].isRegistered, "This code does not match any flight");
         
         bytes32 insuranceKey = generateInsuranceKey(msg.sender, flight, timestamp);
         require(!flightSuretyData.insuranceExists(insuranceKey), "Already bought this insurance");
 
         flightSuretyData.buyInsurance(msg.sender, msg.value, insuranceKey);
+        emit InsurancePurchased(insuranceKey);
+    }
+
+    function withdrawCompensation(string flight, uint256 timestamp)
+    external
+    requireIsOperational
+    {
+        bytes32 insuranceKey = generateInsuranceKey(msg.sender, flight, timestamp);
+        require(flightSuretyData.insuranceExists(insuranceKey), "Insurance does not exist");
+
+        bytes32 flightKey = generateFlightKey(flight, timestamp);
+        require(flights[flightKey].statusCode == 20, "Causes of the delay are not due airline's fault");
+        
+        uint credit = flightSuretyData.getFunds(msg.sender);
+        credit = credit.mul(15);
+        credit = credit.div(10);
+
+        flightSuretyData.creditInsurees(msg.sender, credit, insuranceKey);
+        emit CompensationtWithdrawn(flightKey);
     }
 
     function generateFlightKey(string flight, uint256 timestamp)
@@ -203,7 +224,6 @@ contract FlightSuretyApp {
     {
         return keccak256(abi.encodePacked(passenger, flight, timestamp));
     }
-
 
 
 // region ORACLE MANAGEMENT

@@ -201,12 +201,12 @@ contract('Flight Surety Tests', async (accounts) => {
       
     try {
 
-        await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: accounts[3] });
+        await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: config.testAddresses[7], value: 1 });
         
-        let isFunded = await config.flightSuretyData.isFunded(accounts[3]);
+        let isFunded = await config.flightSuretyData.isFunded(testAddresses[7]);
         assert(isFunded, "No funds added after purchase")
 
-        let key = config.flightSuretyApp.generateInsuranceKey(accounts[3], config.flight, config.timestamp);
+        let key = config.flightSuretyApp.generateInsuranceKey(testAddresses[7], config.flight, config.timestamp);
         let exists = await config.flightSuretyData.insuranceExists(key);
         assert(exists, "Passenger could not purchaise flight insurance");
 
@@ -216,11 +216,13 @@ contract('Flight Surety Tests', async (accounts) => {
   });
 
   it('If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
-  });
-
-  it('Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout', async () => {
-  });
-
-  it('Insurance payouts are not sent directly to passenger’s wallet', async () => {
+        
+        let credit;
+        credit = await config.flightSuretyData.getFunds(config.testAddresses[7]);
+        assert(credit == 1, "Wrong credit before withdrawal");
+        await config.flightSuretyApp.withdrawCompensation(config.flight, config.timestamp, { from: config.testAddresses[7] });
+        credit = await config.flightSuretyData.getFunds(config.testAddresses[7]);
+        assert(credit == 0, "Wrong credit after withdrawal");
+        assert(config.testAddresses[7].balance == 1.5, "Wrong credit in passengers balance");
   });
 });

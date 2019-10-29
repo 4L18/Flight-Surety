@@ -51,11 +51,11 @@ contract('Oracles', async (accounts) => {
         catch(e) {
           // Enable this when debugging
            console.log('\nError', idx, oracleIndexes[idx].toNumber(), config.flight, config.timestamp);
-           //console.log(e.message);
+           console.log(e.message);
         }
       }
     }
 
-          console.log('successCount ' + successCount);
+          console.log('\nsuccessCount ' + successCount);
   });
 });

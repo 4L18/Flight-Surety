@@ -205,7 +205,7 @@ contract('Flight Surety Tests', async (accounts) => {
         
         let isFunded = await config.flightSuretyData.isFunded(testAddresses[7]);
         assert(isFunded, "No funds added after purchase")
-
+        console.log('funds ' + await config.flightSuretyData.getFunds(testAddresses[7]));
         let key = config.flightSuretyApp.generateInsuranceKey(testAddresses[7], config.flight, config.timestamp);
         let exists = await config.flightSuretyData.insuranceExists(key);
         assert(exists, "Passenger could not purchaise flight insurance");

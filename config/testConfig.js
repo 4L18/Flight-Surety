@@ -21,13 +21,13 @@ var Config = async function(accounts) {
     ];
 
 
-    let owner = accounts[0];
-    let firstAirline = accounts[1];
+    let firstAirline = accounts[0];
+    let owner = accounts[1];
     let flight = 'ND1309'; // Course number
     let timestamp = Math.floor(Date.now() / 1000);
     let status = 0;
-    let flightSuretyData = await FlightSuretyData.new(firstAirline);
-    let flightSuretyApp = await FlightSuretyApp.new();
+    let flightSuretyData = await FlightSuretyData.new();
+    let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
 
     
     return {

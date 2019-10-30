@@ -4,7 +4,6 @@ var BigNumber = require('bignumber.js');
 
 contract('Flight Surety Tests', async (accounts) => {
 
-  const PREFIX = "VM Exception while processing transaction: ";
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -98,107 +97,114 @@ contract('Flight Surety Tests', async (accounts) => {
   });
 
   /****************************************************************************************/
-  /* Added tests                                                              */
+  /* Added tests                                                                          */
   /****************************************************************************************/
 
   // Airlines
   it('First airline is registered when contract is deployed', async () => {
       
-    let isRegistered = await config.flightSuretyData.isAirlineRegistered(config.firstAirline, { from: config.flightSuretyApp.address});
-    assert.equal(isRegistered, true, "First airline is not registered");
-  });
-
-  it('Only existing airline may register a new airline until there are at least four airlines registered', async () => {
-
-    let isAuthorized;
-    let airlinesRegistered = await config.flightSuretyData.getAirlinesCount();
-    assert(airlinesRegistered < 5, "There are more than 4 airlines registered");
-
     try {
-        
-        isAuthorized = await config.flightSuretyData.isAuthorized(config.testAddresses[2]);
-        assert(isAuthorized, false, "Address not authorized to call");
-        
-        await config.flightSuretyApp.registerAirline(config.testAddresses[2], { from: accounts[2]});
-    
-    } catch (error) {
-        assert(error, error.message);
-    }
+        let isRegistered = await config.flightSuretyData.isAirlineRegistered(config.firstAirline, { from: config.flightSuretyApp.address});
+        assert(isRegistered, "First airline is not registered");
+        let isAuthorized = await config.flightSuretyData.isAuthorized(config.firstAirline, { from: config.flightSuretyApp.address});
+        assert(isAuthorized, "First airline is not authorized");
 
-    try {
-        
-        isAuthorized = await config.flightSuretyData.isAuthorized(config.firstAirline);
-        assert(isAuthorized, true, "First airline is not authorized to call");
-        
-        await config.flightSuretyApp.registerAirline(config.testAddresses[2], { from: config.firstAirline });
-        let isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[2], { from: config.firstAirline});
-        assert.equal(isRegistered, true, "First airline can register airline");
-    
     } catch (error) {
-        console.log(error.message);
+        console.log(error);
     }
   });
 
   it('Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
     
-        let isRegistered;
-        for(let i = 3; i < 6; i++) {
-            await config.flightSuretyApp.registerAirline(config.testAddresses[i], { from: config.firstAirline });
-            isRegistered = await config.flightSuretyData.isRegistered(config.testAddresses[i]);
-            assert(isRegistered, "Airline has not been registered");
-        }
+    await config.flightSuretyApp.registerAirline(accounts[2], { from: config.firstAirline});
+    let isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[2]);
+    assert(isRegistered, "This account should be registered");
 
-        try {
-            await config.flightSuretyApp.registerAirline(config.testAddresses[6], { from: testAddresses[3] });
-        } catch (error) {
-            assert(error, error.message);
-        }
+    try {
+        let isParticipant = await config.flightSuretyData.isAirlineParticipant(accounts[2]);
+        await config.createAirline(config.testAddresses[3], { from: accounts[2]});
+    } catch(error) {
+        assert(error, "Address should not be authorized to call");
+    }
 
-        let isAuth;
-        for(let i = 2; i < 6; i++) {
-            await config.flightSuretyApp.fund({ from: config.testAddresses[i], value: 10 });        
-            isAuth = config.flightSuretyData.isAuthorized(config.testAddresses[i]);
-            assert(isAuth, "Submit 10 ether does not authorize airline");
-        }
-        
-        try {
-            await config.flightSuretyApp.registerAirline(config.testAddresses[6], { from: testAddresses[3] });
-        } catch (error) {
-            console.log(error.message);
-        }
-        
+    await config.flightSuretyApp.fundAirline({ from: accounts[2], value: 10 });
+    isParticipant = await config.flightSuretyData.isAirlineParticipant(accounts[2]);
+    assert(isParticipant, "This account should be a participant");
+    await config.flightSuretyApp.registerAirline(accounts[3], { from: accounts[2]});
+    isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[3]);
+    assert(isRegistered, true, "This airline should be registered");
+  });
+
+  it('Only existing airline may register a new airline until there are at least four airlines registered', async () => {
+
+    try {
+        await config.flightSuretyApp.registerAirline(accounts[4], { from: accounts[6] });
+    } catch(error) {
+        assert(error, "4th airline should not be registered");
+    }
+
+    let participants = await config.flightSuretyData.getParticipantsCount();
+    assert(participants < 5, "There are more than 4 airlines participating");
+
+    await config.flightSuretyApp.fundAirline({ from: accounts[3], value: 10 });
+    isParticipant = await config.flightSuretyData.isAirlineParticipant(accounts[3]);
+    assert(isParticipant, "3rd should be a participant");
+    
+    await config.flightSuretyApp.registerAirline(accounts[4], { from: accounts[2] });
+    let isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[4]);
+    assert(isRegistered, "4th airline should be registered");
+
+    await config.flightSuretyApp.fundAirline({ from: accounts[4], value: 10 });
+    isParticipant = await config.flightSuretyData.isAirlineParticipant(accounts[4]);
+    assert(isParticipant, "4th account should be a participant");
+
+    await config.flightSuretyApp.registerAirline(accounts[5], { from: accounts[2] });
+    isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[5]);
+    assert(isRegistered, "5th airline should be registered");
+
+    await config.flightSuretyApp.fundAirline({ from: accounts[5], value: 10 });
+    isParticipant = await config.flightSuretyData.isAirlineParticipant(accounts[5]);
+    assert(isParticipant, "5th account should be a participant");
+
+    airlinesRegistered = await config.flightSuretyData.getParticipantsCount();
+    assert(airlinesRegistered == 5, "Should be 5 airlines registered");
+    
+    await config.flightSuretyApp.registerAirline(accounts[6], { from: accounts[2] });
+    isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[6]);
+    assert(!isRegistered, "6th airline should not be registered");
   });
 
   it('Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async () => {
     
-    let isRegistered = true;
+    let airlinesRegistered = await config.flightSuretyData.getParticipantsCount();
+    assert(airlinesRegistered == 5, "There are less than 5 airlines registered");
 
     try {
-        
-        let airlinesRegistered = await config.flightSuretyData.getAirlinesCount();
-        assert(airlinesRegistered >= 5, "There are less than 5 airlines registered");
-
-        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.firstAirline });
-        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[2] });
-
-        isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[6]);
-        assert.equal(isRegistered, false, "6th airline should not be registered");
-
-        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[3] });
-        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[4] });
-        await config.flightSuretyApp.registerAirline(config.testAddresses[7], { from: config.testAddresses[5] });
-        
-        isRegistered = await config.flightSuretyData.isAirlineRegistered(config.testAddresses[6]);
-        assert(isRegistered, "6th airline should be registered");
-
-    } catch (error) {
-        assert(error, error.message);
+        await config.flightSuretyApp.registerAirline(accounts[6], { from: accounts[2] });
+    } catch(error) {
+        assert(error, "2nd airline should not be able to vote 6th again");
     }
+    await config.flightSuretyApp.registerAirline(accounts[6], { from: config.firstAirline });
+    isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[6]);
+    assert(!isRegistered, "6th airline should not be registered");
+
+    await config.flightSuretyApp.registerAirline(accounts[6], { from: accounts[3] });
+    isRegistered = await config.flightSuretyData.isAirlineRegistered(accounts[6]);
+    assert(isRegistered, "6th airline should be registered");
   });
 
   // Passengers
-  it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
-      
+  /*it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
+
+    try {
+        isRegistered = await config.flightSuretyData.isAuthorized(config.firstAirline, { from: config.firstAirline });
+        assert.equal(true, false, "should be registered");
+        await config.flightSuretyApp.registerFlight(config.flight, config.firstAirline, config.timestamp, { from: config.firstAirline });
+        
+    }  catch (error) {
+        console.log(error);
+    }
+
     try {
 
         await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: config.testAddresses[7], value: 1 });
@@ -224,5 +230,5 @@ contract('Flight Surety Tests', async (accounts) => {
         credit = await config.flightSuretyData.getFunds(config.testAddresses[7]);
         assert(credit == 0, "Wrong credit after withdrawal");
         assert(config.testAddresses[7].balance == 1.5, "Wrong credit in passengers balance");
-  });
+  });*/
 });

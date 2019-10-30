@@ -13,7 +13,7 @@ contract FlightSuretyData {
     bool private operational = true;
     mapping(address => bool) private authorizedCallers;
     mapping(address => uint) private fundsLedger;
-    uint private raisedFunds= 0;
+    uint private raisedFunds = 0;
 
     struct Airline {
         uint id;
@@ -23,6 +23,8 @@ contract FlightSuretyData {
     }
     mapping(address => Airline) private airlines;
     uint private airlinesCount = 0;
+    mapping(address => bool) private participantAirlines;
+    uint private participantsCount = 0;
 
     mapping(bytes32 => bool) private insurances;
 
@@ -36,6 +38,7 @@ contract FlightSuretyData {
     event AirlineHasBeenCreated(address airline);
     event AirlineHasBeenVoted(address airline);
     event AirlineHasBeenRegistered(address airline);
+    event AirlineHasBecomeParticipant(address airline);
     event FundsRaised(uint raisedFunds);
     event InsuranceHasBeenBought();
     event Payment();
@@ -44,26 +47,27 @@ contract FlightSuretyData {
     /*                                       CONSTRUCTOR & FALLBACK                             */
     /********************************************************************************************/
     
-    constructor(address firstAirline) 
+    constructor() 
     public 
     {
         contractOwner = msg.sender;
         authorizedCallers[contractOwner] = true;
-        
+
         airlinesCount = airlinesCount.add(1);
-        airlines[firstAirline] = Airline({
+        airlines[contractOwner] = Airline({
                                     id: airlinesCount,
                                     registered: true,
                                     votes: 0
                                     });
-        emit AirlineHasBeenRegistered(firstAirline);
+        emit AirlineHasBeenRegistered(contractOwner);
         
         raisedFunds = raisedFunds.add(10);
-        fundsLedger[firstAirline] = 10;
+        fundsLedger[contractOwner] = 10;
         emit FundsRaised(raisedFunds);
-        
-        authorizedCallers[firstAirline] = true;
-        emit Authorized(firstAirline);
+
+        participantsCount = participantsCount.add(1);
+        participantAirlines[contractOwner] = true;
+        emit AirlineHasBecomeParticipant(contractOwner);
     }
 
     function()
@@ -163,6 +167,15 @@ contract FlightSuretyData {
         return airlines[airlineAddress].registered;
     }
 
+    function isAirlineParticipant(address addr)
+    public
+    view
+    requireIsOperational
+    returns(bool)
+    {
+        return participantAirlines[addr];
+    }
+
     function isFunded(address addr)
     public
     view
@@ -197,6 +210,14 @@ contract FlightSuretyData {
         return airlines[airline].votes;
     }
 
+    function getParticipantsCount()
+    view
+    requireIsOperational
+    returns(uint)
+    {
+        return participantsCount;
+    }
+
     function insuranceExists(bytes32 key)
     view
     requireIsOperational
@@ -229,7 +250,7 @@ contract FlightSuretyData {
     requireIsOperational
     requireAuthorizedCaller(msg.sender)
     {
-
+        require(airlines[airline].votedBy[voter] == false, "Airline has already been already voted by caller");
         require(isAirlineCreated(airline), "Airline must be created before");
             
         airlines[airline].votes = airlines[airline].votes.add(1);
@@ -247,17 +268,18 @@ contract FlightSuretyData {
         emit AirlineHasBeenRegistered(airline);
     }
    
-    function fund(address funder, uint amount)   
+    function fund(address airline, uint amount)   
     requireAuthorizedCaller(msg.sender)
     payable
     {
-        fundsLedger[funder] = fundsLedger[funder].add(amount);
+        fundsLedger[airline] = fundsLedger[airline].add(amount);
         raisedFunds = raisedFunds.add(amount);
         emit FundsRaised(raisedFunds);
 
-        if(fundsLedger[funder] > 10) {
-            authorizedCallers[funder] = true;
-            emit Authorized(funder);
+        if(fundsLedger[airline] >= 10) {
+            participantAirlines[airline] = true;
+            participantsCount = participantsCount.add(1);
+            emit AirlineHasBecomeParticipant(airline);
         }
     }
 

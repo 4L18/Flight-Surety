@@ -74,10 +74,11 @@ contract FlightSuretyApp {
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
 
-    constructor()
+    constructor(address dataContract)
     public 
     {
         contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyData(dataContract);
         operational = true;
     }
 
@@ -102,23 +103,27 @@ contract FlightSuretyApp {
     function registerAirline(address airline)
     requireIsOperational
     {
-        require(flightSuretyData.isAuthorized(msg.sender), "Msg.sender not authorized");
+        require(flightSuretyData.isAirlineParticipant(msg.sender), "Msg.sender is not a participant");
         require(!flightSuretyData.isAirlineRegistered(airline), "Airline already registered");
-        
+
         if(!flightSuretyData.isAirlineCreated(airline)) {
             flightSuretyData.createAirline(airline);
         }
         flightSuretyData.voteAirline(airline, msg.sender);           
         
-        uint airlinesCount = flightSuretyData.getAirlinesCount();            
-        if(airlinesCount < FIRST_LEVEL_QUORUM) {
+        uint participants = flightSuretyData.getParticipantsCount();            
+        if(participants < FIRST_LEVEL_QUORUM) {
 
             flightSuretyData.registerAirline(airline);
 
         } else {
 
+            uint quorum = participants/QUORUM;
+            if(participants%QUORUM != 0) {
+                quorum.add(1);
+            }
             uint votes = flightSuretyData.getAirlineVotes(airline);
-            bool consensus = (votes > (airlinesCount/QUORUM));
+            bool consensus = (votes > quorum);
             if(consensus) {
                 flightSuretyData.registerAirline(airline);
             }
@@ -153,7 +158,7 @@ contract FlightSuretyApp {
     internal
     requireIsOperational
     {
-        require(flightSuretyData.isAuthorized(msg.sender));
+        require(flightSuretyData.isAirlineParticipant(msg.sender));
         bytes32 fligthKey = generateFlightKey(flight, timestamp);
         flights[fligthKey].statusCode = statusCode;
         flights[fligthKey].updatedTimestamp = timestamp;

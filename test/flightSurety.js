@@ -194,41 +194,28 @@ contract('Flight Surety Tests', async (accounts) => {
   });
 
   // Passengers
-  /*it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
+  it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
 
-    try {
-        isRegistered = await config.flightSuretyData.isAuthorized(config.firstAirline, { from: config.firstAirline });
-        assert.equal(true, false, "should be registered");
-        await config.flightSuretyApp.registerFlight(config.flight, config.firstAirline, config.timestamp, { from: config.firstAirline });
-        
-    }  catch (error) {
-        console.log(error);
-    }
+    let passenger = accounts[7];
+    await config.flightSuretyApp.registerFlight(config.flight, config.firstAirline, config.timestamp, { from: config.firstAirline });
+    await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: passenger, value: 1 });
 
-    try {
-
-        await config.flightSuretyApp.buyInsurance(config.flight, config.timestamp, { from: config.testAddresses[7], value: 1 });
-        
-        let isFunded = await config.flightSuretyData.isFunded(testAddresses[7]);
-        assert(isFunded, "No funds added after purchase")
-        console.log('funds ' + await config.flightSuretyData.getFunds(testAddresses[7]));
-        let key = config.flightSuretyApp.generateInsuranceKey(testAddresses[7], config.flight, config.timestamp);
-        let exists = await config.flightSuretyData.insuranceExists(key);
-        assert(exists, "Passenger could not purchaise flight insurance");
-
-    }  catch (error) {
-        console.log(error);
-    }
+    let key = await config.flightSuretyApp.generateInsuranceKey.call(passenger, config.flight, config.timestamp);
+    let exists = await config.flightSuretyData.insuranceExists(key);
+    assert(exists, "Passenger could not purchaise flight insurance");
+    
+    let funds = await config.flightSuretyData.getFunds(passenger);
+    assert(funds == 1, "No funds added after purchase");
   });
 
   it('If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
         
-        let credit;
-        credit = await config.flightSuretyData.getFunds(config.testAddresses[7]);
+        let passenger = accounts[7];
+        let credit = await config.flightSuretyData.getFunds(passenger);
         assert(credit == 1, "Wrong credit before withdrawal");
-        await config.flightSuretyApp.withdrawCompensation(config.flight, config.timestamp, { from: config.testAddresses[7] });
-        credit = await config.flightSuretyData.getFunds(config.testAddresses[7]);
+        await config.flightSuretyApp.withdrawCompensation(config.flight, config.timestamp, { from: passenger });
+        credit = await config.flightSuretyData.getFunds(passenger);
         assert(credit == 0, "Wrong credit after withdrawal");
-        assert(config.testAddresses[7].balance == 1.5, "Wrong credit in passengers balance");
-  });*/
+        assert(passenger.balance == 1.5, "Wrong passengers balance");
+  });
 });

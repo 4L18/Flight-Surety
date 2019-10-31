@@ -12,7 +12,7 @@ module.exports = function(deployer) {
                 .then(async () => {
                     let config = {
                         localhost: {
-                            url: 'ws://localhost:8545',
+                            url: 'ws://localhost:7545',
                             dataAddress: FlightSuretyData.address,
                             appAddress: FlightSuretyApp.address
                         }
@@ -22,7 +22,6 @@ module.exports = function(deployer) {
                     let flightSuretyData = await FlightSuretyData.new();
                     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
                     await flightSuretyData.authorizeCaller(flightSuretyApp.address);
-
 
                     await fs.writeFile(__dirname + '/../src/dapp/config.json',JSON.stringify(config, null, '\t'), 'utf-8', function (err, data) {});
                     await fs.writeFile(__dirname + '/../src/server/config.json',JSON.stringify(config, null, '\t'), 'utf-8', function (err, data) {});

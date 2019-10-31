@@ -193,7 +193,6 @@ contract('Flight Surety Tests', async (accounts) => {
     assert(isRegistered, "6th airline should be registered");
   });
 
-  // Passengers
   it('Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
 
     let passenger = accounts[7];
@@ -206,16 +205,5 @@ contract('Flight Surety Tests', async (accounts) => {
     
     let funds = await config.flightSuretyData.getFunds(passenger);
     assert(funds == 1, "No funds added after purchase");
-  });
-
-  it('If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
-        
-        let passenger = accounts[7];
-        let credit = await config.flightSuretyData.getFunds(passenger);
-        assert(credit == 1, "Wrong credit before withdrawal");
-        await config.flightSuretyApp.withdrawCompensation(config.flight, config.timestamp, { from: passenger });
-        credit = await config.flightSuretyData.getFunds(passenger);
-        assert(credit == 0, "Wrong credit after withdrawal");
-        assert(passenger.balance == 1.5, "Wrong passengers balance");
   });
 });

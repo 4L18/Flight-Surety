@@ -43,8 +43,8 @@
     "web3-provider-engine": "^15.0.3",
     "webpack": "^4.6.0",
     "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "3.1.14",
-    "webpack-node-externals": "1.7.2"
+    "webpack-dev-server": "^3.1.14",
+    "webpack-node-externals": "^1.7.2"
   },
   "dependencies": {}
 }

@@ -162,7 +162,7 @@ contract FlightSuretyApp {
         bytes32 fligthKey = generateFlightKey(flight, timestamp);
         flights[fligthKey].statusCode = statusCode;
         flights[fligthKey].updatedTimestamp = timestamp;
-        emit FlightStatusInfo(airline, flight, timestamp, statusCode);
+        emit OracleReport(airline, flight, timestamp, statusCode);
         
     }
 
@@ -265,8 +265,6 @@ contract FlightSuretyApp {
     mapping(bytes32 => ResponseInfo) private oracleResponses;
 
     // Event fired each time an oracle submits a response
-    event FlightStatusInfo(address airline, string flight, uint256 timestamp, uint8 status);
-
     event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
 
     // Event fired when flight status request is submitted
@@ -332,7 +330,6 @@ contract FlightSuretyApp {
 
         // Information isn't considered verified until at least MIN_RESPONSES
         // oracles respond with the *** same *** information
-        emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
 
             // Handle flight status as appropriate

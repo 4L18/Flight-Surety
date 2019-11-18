@@ -115,7 +115,7 @@ contract FlightSuretyData {
 
     function setOperatingStatus(bool mode)
     external
-    requireAuthorizedCaller(msg.sender)
+    requireContractOwner()
     {
         require(mode != operational, "New mode must be different from existing mode");
         operational = mode;

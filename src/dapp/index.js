@@ -18,16 +18,21 @@ import './flightsurety.css';
 
         // User-submitted transaction
         DOM.elid('submit-oracle').addEventListener('click', () => {
-            conosle.log('submit-oracle pressed');
+            console.log('submit-oracle pressed');
             let flight = DOM.elid('flight-number').value;
             // Write transaction
             contract.fetchFlightStatus(flight, (error, result) => {
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
+                console.log('insideFFS ' + JSON.stringify(result));
+                display(
+                    'Oracles', 'Trigger oracles', 
+                    [ 
+                        { label: 'Fetch Flight Status', error: error, value: result }
+                    ]
+                );
             });
+            
         });
     });
-    
-
 })();
 
 

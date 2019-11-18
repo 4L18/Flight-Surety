@@ -7,6 +7,7 @@ export default class Contract {
 
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+        this.web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
         this.initialize(callback);
         this.owner = null;
@@ -50,7 +51,8 @@ export default class Contract {
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
             .send({ from: self.owner}, (error, result) => {
-                callback(error, payload);
+                console.log(result);
+                callback(error, result);
             });
     }
 }

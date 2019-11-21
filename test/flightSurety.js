@@ -104,9 +104,9 @@ contract('Flight Surety Tests', async (accounts) => {
   it('First airline is registered when contract is deployed', async () => {
       
     try {
-        let isRegistered = await config.flightSuretyData.isAirlineRegistered(config.firstAirline, { from: config.flightSuretyApp.address});
+        let isRegistered = await config.flightSuretyData.isAirlineRegistered(config.firstAirline, { from: config.firstAirline});
         assert(isRegistered, "First airline is not registered");
-        let isAuthorized = await config.flightSuretyData.isAuthorized(config.firstAirline, { from: config.flightSuretyApp.address});
+        let isAuthorized = await config.flightSuretyData.isAuthorized(config.firstAirline, { from: config.firstAirline});
         assert(isAuthorized, "First airline is not authorized");
 
     } catch (error) {

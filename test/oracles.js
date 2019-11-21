@@ -57,6 +57,6 @@ contract('Oracles', async (accounts) => {
       }
     }
 
-          console.log('\nSuccess counter ' + successCount);
+          console.log('\nSuccess cases: ' + successCount);
   });
 });
